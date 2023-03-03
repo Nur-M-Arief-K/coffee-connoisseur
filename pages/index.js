@@ -4,15 +4,28 @@ import Image from "next/image";
 import Banner from "../components/banner";
 import Card from "@/components/card";
 
-import coffeeStores from "../data/coffee-stores.json";
-
 import styles from "../styles/Home.module.css";
+import { fetchCoffeeStores } from "@/lib/coffee-stores";
 
-export default function Home() {
+/* 
+  1. getStaticProps is a special async function to fetch external data before the app is rendered using SSG technique
+  2. this special code will not be included in client-side bundle, paste this entire file to https://next-code-elimination.vercel.app to see the difference
+  3. by default the props will be passed through all of react components 
+*/
+export async function getStaticProps(context) {
+  const coffeeStores = await fetchCoffeeStores();
+  return {
+    props: {
+      coffeeStores: coffeeStores
+    }
+  }
+}
+
+export default function Home(props) {
   const handleOnBannerBtnClick = () => {
     console.log("hi banner button");
   };
-  
+
   return (
     <div>
       <Head>
@@ -26,23 +39,36 @@ export default function Home() {
           buttonText="View stores nearby"
           handleOnClick={handleOnBannerBtnClick}
         />
-        <div className={styles.heroImage} >
-          <Image src="/static/hero-image.png" width={700} height={400} />
+        <div className={styles.heroImage}>
+          <Image
+            alt="hero image"
+            src="/static/hero-image.png"
+            width={700}
+            height={400}
+            priority={true}
+          />
         </div>
-        <div className={styles.cardLayout}>
-          {coffeeStores.map((coffeeStore) => {
-            return (
-              <Card 
-                key={coffeeStore.id}
-                name={coffeeStore.name}
-                imgUrl="/static/hero-image.png"
-                href="/coffee-store/darkhose-coffee"
-                className={styles.card}
-              />
-            );
-          })}
-        </div>
+        {props.coffeeStores.length > 0 && (
+          <>
+            <h2 className={styles.heading2}>Toronto stores</h2>
+            <div className={styles.cardLayout}>
+              {props.coffeeStores.map((coffeeStore) => {
+                const { id, name, imgUrl } = coffeeStore;
+                // here fetched data is used from this component props
+                return (
+                  <Card
+                    key={id}
+                    name={name}
+                    imgUrl={imgUrl || "https://images.unsplash.com/photo-1498804103079-a6351b050096?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=2468&q=80"}
+                    href={`/coffee-store/${id}`}
+                    className={styles.card}
+                  />
+                );
+              })}
+            </div>
+          </>
+        )}
       </main>
     </div>
-  )
+  );
 }
